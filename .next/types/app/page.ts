@@ -1,4 +1,4 @@
-// File: C:\Users\Guillaume\OneDrive\Bureau\noah-v1-structure\src\app\page.tsx
+// File: D:\N.O.A.H.-Website\src\app\page.tsx
 import * as entry from '../../../src/app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

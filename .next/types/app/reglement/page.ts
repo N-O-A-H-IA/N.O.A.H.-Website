@@ -1,8 +1,8 @@
-// File: C:\Users\Guillaume\OneDrive\Bureau\noah-v1-structure\src\app\tarifs\page.tsx
-import * as entry from '../../../../src/app/tarifs/page.js'
+// File: D:\N.O.A.H.-Website\src\app\reglement\page.tsx
+import * as entry from '../../../../src/app/reglement/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
-type TEntry = typeof import('../../../../src/app/tarifs/page.js')
+type TEntry = typeof import('../../../../src/app/reglement/page.js')
 
 // Check that the entry is a valid entry
 checkFields<Diff<{

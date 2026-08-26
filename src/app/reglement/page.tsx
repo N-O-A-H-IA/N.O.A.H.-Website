@@ -112,6 +112,7 @@ const QUESTION_BANK = [
 // 🎯 COMPOSANT PRINCIPAL
 // ============================================
 export default function ReglementPage() {
+  
   console.log("🔍 VRAIE VALEUR DU CLIENT ID :",  process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID);
   const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
