@@ -1,27 +1,33 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+// src/lib/supabase/server.ts
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
-export function createServerSupabaseClient() {
-  const cookieStore = cookies();
+export function createClient() {
+  const cookieStore = cookies()
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            try {
+              cookieStore.set({ name, value, ...options })
+            } catch (error) {
+              // Ignorer les erreurs si appelé depuis un Server Component
+            }
+          },
+          remove(name: string, options: CookieOptions) {
+            try {
+              cookieStore.set({ name, value: '', ...options })
+            } catch (error) {
+              // Ignorer les erreurs si appelé depuis un Server Component
+            }
+          },
         },
-        setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Ignoré si appelé depuis un Server Component
-          }
-        },
-      },
-    }
-  );
+      }
+  )
 }

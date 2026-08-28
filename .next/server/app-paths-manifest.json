@@ -1,7 +1,7 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/reglement/page": "app/reglement/page.js",
-  "/api/discord/grant-access/route": "app/api/discord/grant-access/route.js",
-  "/page": "app/page.js",
-  "/icon.svg/route": "app/icon.svg/route.js"
+  "/(main)/page": "app/(main)/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/student/verifications/page": "app/admin/student/verifications/page.js",
+  "/admin/moderation/chats/page": "app/admin/moderation/chats/page.js"
 }
