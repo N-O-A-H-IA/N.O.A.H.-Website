@@ -78,3 +78,191 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #2F2F35;
 }
+
+/* ===== VARIABLES CSS pour les thèmes ===== */
+:root {
+  --accent-color: #8b5cf6;
+  --base-font-size: 16px;
+}
+
+/* ===== THÈMES ===== */
+body.theme-midnight {
+  background-color: #0a0a0f;
+  color: #ffffff;
+}
+
+body.theme-ocean {
+  background-color: #0c1220;
+  color: #e0f2fe;
+}
+
+body.theme-forest {
+  background-color: #0a1a0f;
+  color: #d1fae5;
+}
+
+body.theme-sunset {
+  background-color: #1a0f0a;
+  color: #fed7aa;
+}
+
+body.theme-nordic {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
+body.theme-cyberpunk {
+  background-color: #0f0518;
+  color: #f0abfc;
+}
+
+body.theme-light {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+/* ===== DENSITÉ ===== */
+body.density-compact {
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+}
+
+body.density-standard {
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+}
+
+body.density-comfortable {
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+}
+
+/* ===== ANIMATIONS RÉDUITES ===== */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ===== CONTRASTE ÉLEVÉ ===== */
+.high-contrast {
+  --contrast-boost: 1.2;
+}
+
+.high-contrast * {
+  filter: contrast(var(--contrast-boost));
+}
+
+/* ===== LECTEUR D'ÉCRAN ===== */
+.screen-reader-optimized .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ===== VARIABLES & THÈMES FORCÉS ===== */
+:root {
+  --accent-color: #8b5cf6;
+}
+
+/* Thèmes */
+html[data-theme="midnight"], html[data-theme="midnight"] body {
+  background-color: #0a0a0f !important;
+  color: #ffffff !important;
+}
+html[data-theme="ocean"], html[data-theme="ocean"] body {
+  background-color: #0c1220 !important;
+  color: #e0f2fe !important;
+}
+html[data-theme="forest"], html[data-theme="forest"] body {
+  background-color: #0a1a0f !important;
+  color: #d1fae5 !important;
+}
+html[data-theme="sunset"], html[data-theme="sunset"] body {
+  background-color: #1a0f0a !important;
+  color: #fed7aa !important;
+}
+html[data-theme="nordic"], html[data-theme="nordic"] body {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+html[data-theme="cyberpunk"], html[data-theme="cyberpunk"] body {
+  background-color: #0f0518 !important;
+  color: #f0abfc !important;
+}
+html[data-theme="light"], html[data-theme="light"] body {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Densité (ajuste les paddings des cartes glass) */
+html[data-density="compact"] .glass,
+html[data-density="compact"] .rounded-2xl,
+html[data-density="compact"] .rounded-xl {
+  padding: 1rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+html[data-density="comfortable"] .glass,
+html[data-density="comfortable"] .rounded-2xl,
+html[data-density="comfortable"] .rounded-xl {
+  padding: 2rem !important;
+  margin-bottom: 2rem !important;
+}
+
+/* Animations réduites */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Contraste élevé */
+html.high-contrast * {
+  filter: contrast(1.5) !important;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+/* Force le thème sombre sur TOUS les select */
+select {
+  background-color: #0a0a0f !important;
+  color: white !important;
+}
+
+select option {
+  background-color: #0a0a0f !important;
+  color: white !important;
+}
+
+/* Pour Chrome/Safari */
+select::-ms-expand {
+  display: none;
+}
+
+/* Pour Firefox */
+select option:checked {
+  background-color: #7c3aed !important;
+  color: white !important;
+}

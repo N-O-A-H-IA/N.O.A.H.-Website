@@ -1,18 +1,38 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import {useState, useRef, useEffect} from "react";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/client";
+
 import {
     Upload, Mail, FileText, CheckCircle2, AlertCircle, Loader2,
     GraduationCap, Shield, Clock, X, Search, Building2, Globe,
-    Calendar, Trash2, RefreshCw, Lock, Info
+    Calendar, Trash2, RefreshCw, Lock, Info, MessageSquare, ExternalLink
 } from "lucide-react";
 
 type VerificationStatus = "idle" | "processing" | "verified" | "pending" | "rejected";
 
+
+// Domaines bloqués (email personnels)
+const BLOCKED_DOMAINS = [
+    'gmail.com',
+    'yahoo.fr',
+    'yahoo.com',
+    'hotmail.com',
+    'outlook.com',
+    'icloud.com',
+    'protonmail.com',
+    'proton.me',
+    'live.fr',
+    'live.com',
+    'msn.com'
+];
+
 export default function StudentVerificationPage() {
+    // ✅ LISTE DES DOMAINES AUTORISÉS
+    const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
+    const [domainsLoading, setDomainsLoading] = useState(true);
     const router = useRouter();
     const supabase = createClient();
 
@@ -29,22 +49,119 @@ export default function StudentVerificationPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string | undefined>>({});
     const [rejectionReason, setRejectionReason] = useState("");
+    const [showDomainRequest, setShowDomainRequest] = useState(false);
+    const [customDomain, setCustomDomain] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Vérifier la connexion au chargement
+    // Ajoute un useEffect pour recharger les domaines régulièrement ou sur focus
     useEffect(() => {
-        const checkUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                router.push("/login?redirect=/student-verification");
+        const loadAllowedDomains = async () => {
+            const { data, error } = await supabase
+                .from('allowed_domains')
+                .select('domain')
+                .eq('is_active', true);
+
+            if (!error && data) {
+                setAllowedDomains(data.map((d: any) => d.domain.toLowerCase()));
+                console.log("✅ Domaines chargés:", data.map((d: any) => d.domain));
             }
+            setDomainsLoading(false);
         };
-        checkUser();
-    }, [router, supabase]);
+
+        loadAllowedDomains();
+
+        // Recharger quand la fenêtre reprend le focus
+        window.addEventListener('focus', loadAllowedDomains);
+        return () => window.removeEventListener('focus', loadAllowedDomains);
+    }, []);
+
+    // Validation en temps réel
+    const validateStep = (currentStep: number): boolean => {
+        const newErrors: Record<string, string> = {};
+
+        if (currentStep === 1) {
+            if (!firstName.trim()) {
+                newErrors.firstName = "Le prénom est obligatoire";
+            }
+            if (!lastName.trim()) {
+                newErrors.lastName = "Le nom est obligatoire";
+            }
+        }
+
+        if (currentStep === 2) {
+            if (!institution.trim()) {
+                newErrors.institution = "Le nom de l'établissement est obligatoire";
+            }
+            if (!institutionType) {
+                newErrors.institutionType = "Veuillez sélectionner un type d'établissement";
+            }
+        }
+
+        if (currentStep === 3) {
+            // Validation email étudiant
+            if (studentEmail) {
+                const emailDomain = studentEmail.split('@')[1]?.toLowerCase();
+                console.log("📧 Email:", studentEmail, "| Domaine:", emailDomain);
+                console.log("📋 Domaines autorisés:", allowedDomains);
+
+                if (BLOCKED_DOMAINS.includes(emailDomain)) {
+                    newErrors.email = `Les adresses ${emailDomain} ne sont pas acceptées.`;
+                }
+                else if (!allowedDomains.includes(emailDomain)) {
+                    console.log("❌ Domaine non autorisé:", emailDomain);
+                    setShowDomainRequest(true);
+                    newErrors.email = "DOMAIN_NOT_ALLOWED";
+                }
+                else {
+                    console.log("✅ Domaine autorisé!");
+                    const studentEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+                    if (!studentEmailRegex.test(studentEmail)) {
+                        newErrors.email = "Format d'email invalide. Ex prénom.nom@école.fr";
+                    }
+                }
+            }
+
+            if (!studentEmail && uploadedFiles.length === 0) {
+                newErrors.email = "Veuillez fournir au moins un email étudiant OU un justificatif";
+                newErrors.files = "Veuillez fournir au moins un email étudiant OU un justificatif";
+            }
+
+            // Validation des fichiers
+            if (uploadedFiles.length > 0) {
+                const validTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
+                const maxSize = 10 * 1024 * 1024;
+
+                const invalidFiles = uploadedFiles.filter(file =>
+                    !validTypes.includes(file.type) || file.size > maxSize
+                );
+
+                if (invalidFiles.length > 0) {
+                    newErrors.files = "Fichiers invalides. Acceptés : PDF, JPG, PNG (max 10MB)";
+                }
+            }
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleNextStep = () => {
+        if (validateStep(step)) {
+            setStep(step + 1);
+            setErrors({});
+        }
+    };
+
+    const handlePrevStep = () => {
+        setStep(step - 1);
+        setErrors({});
+        setShowDomainRequest(false);
+    };
 
     const processFiles = (files: File[]) => {
         const validTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
-        const maxSize = 10 * 1024 * 1024; // 10MB
+        const maxSize = 10 * 1024 * 1024;
 
         const invalidFiles = files.filter(file =>
             !validTypes.includes(file.type) || file.size > maxSize
@@ -79,19 +196,8 @@ export default function StudentVerificationPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const newErrors: Record<string, string> = {};
 
-        if (!studentEmail && uploadedFiles.length === 0) {
-            newErrors.email = "Veuillez fournir au moins un email étudiant OU un justificatif";
-            newErrors.files = "Veuillez fournir au moins un email étudiant OU un justificatif";
-        }
-
-        if (studentEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(studentEmail)) {
-            newErrors.email = "Veuillez entrer une adresse email valide";
-        }
-
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
+        if (!validateStep(3)) {
             return;
         }
 
@@ -99,13 +205,30 @@ export default function StudentVerificationPage() {
         setVerificationStatus("processing");
 
         try {
-            // 1. Récupérer l'utilisateur connecté
             const { data: { user }, error: userError } = await supabase.auth.getUser();
             if (userError || !user) {
                 throw new Error("Session expirée. Veuillez vous reconnecter.");
             }
 
-            // 2. Upload du fichier vers Supabase Storage (si présent)
+            // ✅ Sauvegarder le profil avec TOUS les champs
+            // Dans handleSubmit, après la vérification de l'utilisateur
+
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .update({
+                    first_name: firstName,
+                    last_name: lastName,
+                    full_name: `${firstName} ${lastName}`,
+                    // Ne pas écraser le username s'il existe déjà
+                    // username: profile?.username || firstName.toLowerCase() + lastName.toLowerCase(),
+                })
+                .eq('id', user.id);
+
+            if (profileError) {
+                console.error("Erreur sauvegarde profil:", profileError);
+            }
+
+            // Upload du fichier vers Supabase Storage
             let documentUrl: string | null = null;
             let documentType = "email";
 
@@ -113,7 +236,6 @@ export default function StudentVerificationPage() {
                 documentType = "certificate";
                 const file = uploadedFiles[0];
                 const fileExt = file.name.split('.').pop();
-                // Nommer le fichier avec l'ID utilisateur pour l'organisation et la sécurité
                 const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
                 const { error: uploadError } = await supabase.storage
@@ -128,26 +250,23 @@ export default function StudentVerificationPage() {
                     throw new Error("Échec de l'upload du document. Veuillez réessayer.");
                 }
 
-                // Récupérer l'URL publique (ou signée si ton bucket est privé)
-                const { data: urlData } = supabase.storage
-                    .from('student-documents')
-                    .getPublicUrl(fileName);
-
-                documentUrl = urlData.publicUrl;
+                // Stocker le chemin relatif
+                documentUrl = fileName;
             }
 
-            // 3. Insérer la demande dans la base de données
+            // Insérer la demande dans la base de données
             const { error: dbError } = await supabase
                 .from('student_verifications')
                 .insert({
                     user_id: user.id,
-                    email: studentEmail || null,
+                    student_email: studentEmail || null,  // ✅ student_email au lieu de email
                     document_url: documentUrl,
-                    document_type: documentType,
+                    document_type: documentType || 'email',  // ✅ Valeur par défaut obligatoire
                     institution_name: institution,
                     country: country,
                     institution_type: institutionType,
-                    status: 'pending', // Par défaut en attente de validation admin
+                    status: 'pending',
+                    created_at: new Date().toISOString(),
                 });
 
             if (dbError) {
@@ -155,7 +274,6 @@ export default function StudentVerificationPage() {
                 throw new Error("Une erreur est survenue lors de l'enregistrement de votre demande.");
             }
 
-            // 4. Succès ! Redirection vers l'état "pending" (ou "verified" si tu fais de l'auto-validation)
             setVerificationStatus("pending");
 
         } catch (error: any) {
@@ -167,17 +285,58 @@ export default function StudentVerificationPage() {
         }
     };
 
+    const handleDomainRequest = async () => {
+        if (!customDomain.trim()) {
+            alert("Veuillez entrer votre domaine");
+            return;
+        }
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+
+            // 1. Stocker dans Supabase
+            await supabase
+                .from('domain_requests')
+                .insert({
+                    user_id: user?.id,
+                    domain: customDomain.toLowerCase(),
+                    institution_name: institution,
+                    email: studentEmail || user?.email,
+                    status: 'pending'
+                });
+
+            // 2. Envoyer une notification Discord
+            await fetch('/api/discord/webhook', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    domain: customDomain,
+                    institution: institution,
+                    email: studentEmail || user?.email,
+                    userName: `${firstName} ${lastName}`
+                })
+            });
+
+            alert(`✅ Demande envoyée pour ajouter le domaine ${customDomain} !\nNous vous contacterons bientôt.`);
+            setShowDomainRequest(false);
+            setCustomDomain("");
+
+        } catch (error) {
+            console.error("Erreur:", error);
+            alert(" Une erreur est survenue.");
+        }
+    };
+
     const resetVerification = () => {
         setVerificationStatus("idle");
         setStep(1);
         setUploadedFiles([]);
         setStudentEmail("");
         setErrors({});
+        setShowDomainRequest(false);
     };
 
-    // --- RENDU DES ÉTATS (Processing, Verified, Pending, Rejected) ---
-    // (Je garde exactement ton excellent code de rendu, inchangé)
-
+    // États de chargement, succès, etc. (inchangés)
     if (verificationStatus === "processing") {
         return (
             <main className="min-h-screen bg-noah-black">
@@ -190,9 +349,18 @@ export default function StudentVerificationPage() {
                             </div>
                             <h1 className="font-display text-3xl font-bold text-white mb-6">Vérification en cours...</h1>
                             <div className="space-y-4 text-left max-w-md mx-auto">
-                                <div className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-400" /><span className="text-white/80">Document reçu</span></div>
-                                <div className="flex items-center gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-400" /><span className="text-white/80">Format vérifié</span></div>
-                                <div className="flex items-center gap-3"><Loader2 className="w-5 h-5 text-violet-400 animate-spin" /><span className="text-white/80">Enregistrement sécurisé...</span></div>
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                                    <span className="text-white/80">Document reçu</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                                    <span className="text-white/80">Format vérifié</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
+                                    <span className="text-white/80">Enregistrement sécurisé...</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -258,7 +426,7 @@ export default function StudentVerificationPage() {
         );
     }
 
-    // --- RENDU DU FORMULAIRE MULTI-ÉTAPES ---
+    // Formulaire principal
     return (
         <main className="min-h-screen bg-noah-black">
             <Navbar />
@@ -268,24 +436,30 @@ export default function StudentVerificationPage() {
                     <div className="text-center mb-10">
                         <div className="flex items-center justify-center gap-4 mb-6">
                             <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                    step >= 1 ? 'bg-emerald-500/20 border border-emerald-500/30' : 'bg-white/5 border border-white/10'
+                                }`}>
+                                    {step > 1 ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <span className="text-sm text-white/60">1</span>}
                                 </div>
-                                <span className="text-sm text-white/60">Compte</span>
+                                <span className={`text-sm ${step >= 1 ? 'text-white/80' : 'text-white/40'}`}>Compte</span>
                             </div>
                             <div className="w-8 h-px bg-white/20" />
                             <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center">
-                                    <span className="text-sm font-bold text-violet-400">2</span>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                    step >= 2 ? 'bg-violet-500/20 border border-violet-500/30' : 'bg-white/5 border border-white/10'
+                                }`}>
+                                    {step > 2 ? <CheckCircle2 className="w-4 h-4 text-violet-400" /> : <span className="text-sm text-white/60">2</span>}
                                 </div>
-                                <span className="text-sm text-white font-medium">Vérification</span>
+                                <span className={`text-sm ${step >= 2 ? 'text-white font-medium' : 'text-white/40'}`}>Vérification</span>
                             </div>
                             <div className="w-8 h-px bg-white/20" />
                             <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                                    <span className="text-sm text-white/40">3</span>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                    step >= 3 ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 border border-white/10'
+                                }`}>
+                                    <span className="text-sm text-white/60">3</span>
                                 </div>
-                                <span className="text-sm text-white/40">Résultat</span>
+                                <span className={`text-sm ${step >= 3 ? 'text-white/80' : 'text-white/40'}`}>Résultat</span>
                             </div>
                         </div>
                         <h1 className="font-display text-4xl font-bold text-white mb-4">Vérifiez votre statut étudiant</h1>
@@ -307,23 +481,74 @@ export default function StudentVerificationPage() {
                                         <p className="text-sm text-white/60">Renseignez vos informations personnelles</p>
                                     </div>
                                 </div>
+
                                 <div className="grid md:grid-cols-2 gap-5">
                                     <div>
-                                        <label className="text-xs font-semibold text-white/70 mb-2 block uppercase tracking-wider">Prénom</label>
-                                        <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required placeholder="Jean" className="w-full bg-noah-panel border border-noah-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition" />
+                                        <label className="text-xs font-semibold text-white/70 mb-2 block uppercase tracking-wider">
+                                            Prénom *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={firstName}
+                                            onChange={(e) => {
+                                                setFirstName(e.target.value);
+                                                if (errors.firstName) setErrors(prev => ({ ...prev, firstName: undefined }));
+                                            }}
+                                            required
+                                            placeholder="Jean"
+                                            className={`w-full bg-noah-panel border ${errors.firstName ? 'border-red-500' : 'border-noah-border'} rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition`}
+                                        />
+                                        {errors.firstName && (
+                                            <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                                                <AlertCircle className="w-3 h-3" /> {errors.firstName}
+                                            </p>
+                                        )}
                                     </div>
                                     <div>
-                                        <label className="text-xs font-semibold text-white/70 mb-2 block uppercase tracking-wider">Nom</label>
-                                        <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required placeholder="Dupont" className="w-full bg-noah-panel border border-noah-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition" />
+                                        <label className="text-xs font-semibold text-white/70 mb-2 block uppercase tracking-wider">
+                                            Nom *
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={lastName}
+                                            onChange={(e) => {
+                                                setLastName(e.target.value);
+                                                if (errors.lastName) setErrors(prev => ({ ...prev, lastName: undefined }));
+                                            }}
+                                            required
+                                            placeholder="Dupont"
+                                            className={`w-full bg-noah-panel border ${errors.lastName ? 'border-red-500' : 'border-noah-border'} rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition`}
+                                        />
+                                        {errors.lastName && (
+                                            <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                                                <AlertCircle className="w-3 h-3" /> {errors.lastName}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
+
                                 <div>
-                                    <label className="text-xs font-semibold text-white/70 mb-2 block uppercase tracking-wider">Année de fin de formation prévue</label>
-                                    <input type="text" value={expectedEndDate} onChange={(e) => setExpectedEndDate(e.target.value)} placeholder="2026" className="w-full bg-noah-panel border border-noah-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition" />
+                                    <label className="text-xs font-semibold text-white/70 mb-2 block uppercase tracking-wider">
+                                        Année de fin de formation prévue
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={expectedEndDate}
+                                        onChange={(e) => setExpectedEndDate(e.target.value)}
+                                        placeholder="2026"
+                                        className="w-full bg-noah-panel border border-noah-border rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition"
+                                    />
                                 </div>
-                                <button type="button" onClick={() => setStep(2)} className="w-full btn-primary py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-violet-500/20">
+
+                                <button
+                                    type="button"
+                                    onClick={handleNextStep}
+                                    className="w-full btn-primary py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-violet-500/20"
+                                >
                                     Continuer
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                    </svg>
                                 </button>
                             </div>
                         )}
@@ -340,20 +565,45 @@ export default function StudentVerificationPage() {
                                         <p className="text-sm text-white/60">Informations sur votre école ou université</p>
                                     </div>
                                 </div>
+
                                 <div>
-                                    <label className="text-xs font-semibold text-white/70 mb-2 block uppercase tracking-wider">Nom de l'établissement</label>
+                                    <label className="text-xs font-semibold text-white/70 mb-2 block uppercase tracking-wider">
+                                        Nom de l'établissement *
+                                    </label>
                                     <div className="relative">
                                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-                                        <input type="text" value={institution} onChange={(e) => setInstitution(e.target.value)} required placeholder="Rechercher votre établissement..." className="w-full bg-noah-panel border border-noah-border rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition" />
+                                        <input
+                                            type="text"
+                                            value={institution}
+                                            onChange={(e) => {
+                                                setInstitution(e.target.value);
+                                                if (errors.institution) setErrors(prev => ({ ...prev, institution: undefined }));
+                                            }}
+                                            required
+                                            placeholder="Rechercher votre établissement..."
+                                            className={`w-full bg-noah-panel border ${errors.institution ? 'border-red-500' : 'border-noah-border'} rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition`}
+                                        />
                                     </div>
+                                    {errors.institution && (
+                                        <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                                            <AlertCircle className="w-3 h-3" /> {errors.institution}
+                                        </p>
+                                    )}
                                 </div>
+
                                 <div className="grid md:grid-cols-2 gap-5">
                                     <div>
-                                        <label className="text-xs font-semibold text-white/70 mb-2 block uppercase tracking-wider">Pays</label>
+                                        <label className="text-xs font-semibold text-white/70 mb-2 block uppercase tracking-wider">
+                                            Pays
+                                        </label>
                                         <div className="relative">
                                             <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-                                            <select value={country} onChange={(e) => setCountry(e.target.value)} className="w-full bg-noah-panel border border-noah-border rounded-xl pl-11 pr-4 py-3 text-sm text-white outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition appearance-none cursor-pointer">
-                                                <option value="France">🇫🇷 France</option>
+                                            <select
+                                                value={country}
+                                                onChange={(e) => setCountry(e.target.value)}
+                                                className="w-full bg-noah-panel border border-noah-border rounded-xl pl-11 pr-4 py-3 text-sm text-white outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition appearance-none cursor-pointer"
+                                            >
+                                                <option value="France">🇷 France</option>
                                                 <option value="Belgique">🇧🇪 Belgique</option>
                                                 <option value="Suisse">🇨🇭 Suisse</option>
                                                 <option value="Canada">🇨🇦 Canada</option>
@@ -362,8 +612,18 @@ export default function StudentVerificationPage() {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-xs font-semibold text-white/70 mb-2 block uppercase tracking-wider">Type d'établissement</label>
-                                        <select value={institutionType} onChange={(e) => setInstitutionType(e.target.value)} required className="w-full bg-noah-panel border border-noah-border rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition appearance-none cursor-pointer">
+                                        <label className="text-xs font-semibold text-white/70 mb-2 block uppercase tracking-wider">
+                                            Type d'établissement *
+                                        </label>
+                                        <select
+                                            value={institutionType}
+                                            onChange={(e) => {
+                                                setInstitutionType(e.target.value);
+                                                if (errors.institutionType) setErrors(prev => ({ ...prev, institutionType: undefined }));
+                                            }}
+                                            required
+                                            className={`w-full bg-noah-panel border ${errors.institutionType ? 'border-red-500' : 'border-noah-border'} rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition appearance-none cursor-pointer`}
+                                        >
                                             <option value="">Sélectionnez...</option>
                                             <option value="universite">Université</option>
                                             <option value="ecole">École</option>
@@ -375,13 +635,31 @@ export default function StudentVerificationPage() {
                                             <option value="specialisee">École spécialisée</option>
                                             <option value="autre">Autre</option>
                                         </select>
+                                        {errors.institutionType && (
+                                            <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
+                                                <AlertCircle className="w-3 h-3" /> {errors.institutionType}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
+
                                 <div className="flex gap-3">
-                                    <button type="button" onClick={() => setStep(1)} className="flex-1 py-3.5 rounded-xl font-semibold text-white glass border border-white/10 hover:bg-white/5 transition">Retour</button>
-                                    <button type="button" onClick={() => setStep(3)} className="flex-1 btn-primary py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-violet-500/20">
+                                    <button
+                                        type="button"
+                                        onClick={handlePrevStep}
+                                        className="flex-1 py-3.5 rounded-xl font-semibold text-white glass border border-white/10 hover:bg-white/5 transition"
+                                    >
+                                        Retour
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleNextStep}
+                                        className="flex-1 btn-primary py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-violet-500/20"
+                                    >
                                         Continuer
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                        </svg>
                                     </button>
                                 </div>
                             </div>
@@ -408,22 +686,90 @@ export default function StudentVerificationPage() {
                                         </div>
                                         <div>
                                             <h3 className="font-semibold text-white mb-1">Méthode recommandée : Email étudiant</h3>
-                                            <p className="text-sm text-white/60">Utilisez votre adresse email fournie par votre établissement</p>
+                                            <p className="text-sm text-white/60">
+                                                Utilisez votre adresse email fournie par votre établissement
+                                            </p>
                                         </div>
                                     </div>
                                     <input
                                         type="email"
                                         value={studentEmail}
-                                        onChange={(e) => setStudentEmail(e.target.value)}
-                                        placeholder="prenom.nom@universite.fr"
-                                        className={`w-full bg-noah-panel border ${errors.email ? 'border-red-500/50' : 'border-noah-border'} rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition`}
+                                        onChange={(e) => {
+                                            setStudentEmail(e.target.value);
+                                            if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+                                            setShowDomainRequest(false);
+                                        }}
+                                        placeholder="prénom.nom@école.fr"
+                                        className={`w-full bg-noah-panel border ${errors.email ? 'border-red-500' : 'border-noah-border'} rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition`}
                                     />
-                                    {errors.email && (
-                                        <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                                            <AlertCircle className="w-3.5 h-3.5" />{errors.email}
-                                        </p>
+                                    {errors.email && errors.email !== "DOMAIN_NOT_ALLOWED" && (
+                                        <div className="mt-2 flex items-start gap-2">
+                                            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                                            <p className="text-sm text-red-400">{errors.email}</p>
+                                        </div>
                                     )}
-                                    <p className="mt-2 text-xs text-white/50">💡 Si votre email est reconnu, la validation sera <span className="text-emerald-400 font-medium">automatique et instantanée</span></p>
+
+                                    {/* Domaine non autorisé - Formulaire de demande */}
+                                    {showDomainRequest && (
+                                        <div className="mt-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                                            <div className="flex items-start gap-3 mb-3">
+                                                <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                                                <div>
+                                                    <h4 className="font-semibold text-white mb-1">Domaine non autorisé</h4>
+                                                    <p className="text-sm text-white/70 mb-3">
+                                                        Votre domaine email n'est pas dans notre liste. Vous pouvez demander à l'ajouter :
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid md:grid-cols-2 gap-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => document.getElementById('domain-form')?.scrollIntoView({ behavior: 'smooth' })}
+                                                    className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500/30 transition text-sm font-medium"
+                                                >
+                                                    <MessageSquare className="w-4 h-4" />
+                                                    Demander l'ajout du domaine
+                                                </button>
+                                                <a
+                                                    href="https://discord.gg/ton-invite"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/30 transition text-sm font-medium"
+                                                >
+                                                    <ExternalLink className="w-4 h-4" />
+                                                    Contacter sur Discord
+                                                </a>
+                                            </div>
+
+                                            <div id="domain-form" className="mt-4 p-4 rounded-lg bg-white/[0.03] border border-white/10">
+                                                <label className="text-xs font-semibold text-white/70 mb-2 block">
+                                                    Votre domaine email
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={customDomain}
+                                                    onChange={(e) => setCustomDomain(e.target.value)}
+                                                    placeholder="exemple.univ.fr"
+                                                    className="w-full bg-noah-panel border border-noah-border rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-blue-500/50 mb-3"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={handleDomainRequest}
+                                                    className="w-full py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition"
+                                                >
+                                                    Envoyer la demande
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <p className="mt-2 text-xs text-white/50">
+                                        💡 Si votre email est reconnu, la validation sera <span className="text-emerald-400 font-medium">automatique et instantanée</span>
+                                    </p>
+                                    <p className="text-xs text-amber-400/80 mt-1">
+                                        ️ Les adresses Gmail, Yahoo, Hotmail ne sont pas acceptées
+                                    </p>
                                 </div>
 
                                 <div className="flex items-center gap-3">
@@ -440,7 +786,9 @@ export default function StudentVerificationPage() {
                                         </div>
                                         <div>
                                             <h3 className="font-semibold text-white mb-1">Importer un justificatif</h3>
-                                            <p className="text-sm text-white/60">Fournissez un document officiel confirmant votre inscription</p>
+                                            <p className="text-sm text-white/60">
+                                                Fournissez un document officiel confirmant votre inscription
+                                            </p>
                                         </div>
                                     </div>
 
@@ -463,9 +811,15 @@ export default function StudentVerificationPage() {
                                                 <Upload className="w-5 h-5 text-violet-400" />
                                             </div>
                                             <div className="text-center">
-                                                <p className="text-sm font-medium text-white mb-1">Déposez votre justificatif ici</p>
-                                                <p className="text-xs text-white/50 mb-3">ou cliquez pour choisir un fichier</p>
-                                                <p className="text-xs text-white/40">PDF, JPG, PNG • Max 10 Mo</p>
+                                                <p className="text-sm font-medium text-white mb-1">
+                                                    Déposez votre justificatif ici
+                                                </p>
+                                                <p className="text-xs text-white/50 mb-3">
+                                                    ou cliquez pour choisir un fichier
+                                                </p>
+                                                <p className="text-xs text-white/40">
+                                                    PDF, JPG, PNG • Max 10 Mo
+                                                </p>
                                             </div>
                                         </label>
                                     </div>
@@ -481,7 +835,11 @@ export default function StudentVerificationPage() {
                                                             <span className="text-xs text-white/50">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                                                         </div>
                                                     </div>
-                                                    <button type="button" onClick={() => removeFile(index)} className="p-1 hover:bg-white/10 rounded transition">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeFile(index)}
+                                                        className="p-1 hover:bg-white/10 rounded transition"
+                                                    >
                                                         <Trash2 className="w-4 h-4 text-white/60" />
                                                     </button>
                                                 </div>
@@ -490,23 +848,36 @@ export default function StudentVerificationPage() {
                                     )}
 
                                     {errors.files && (
-                                        <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                                            <AlertCircle className="w-3.5 h-3.5" />{errors.files}
-                                        </p>
+                                        <div className="mt-2 flex items-start gap-2">
+                                            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                                            <p className="text-sm text-red-400">{errors.files}</p>
+                                        </div>
                                     )}
                                 </div>
 
                                 <div className="flex gap-3">
-                                    <button type="button" onClick={() => setStep(2)} className="flex-1 py-3.5 rounded-xl font-semibold text-white glass border border-white/10 hover:bg-white/5 transition">Retour</button>
+                                    <button
+                                        type="button"
+                                        onClick={handlePrevStep}
+                                        className="flex-1 py-3.5 rounded-xl font-semibold text-white glass border border-white/10 hover:bg-white/5 transition"
+                                    >
+                                        Retour
+                                    </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
                                         className="flex-1 btn-primary py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-violet-500/20"
                                     >
                                         {isSubmitting ? (
-                                            <><Loader2 className="w-4 h-4 animate-spin" /> Envoi en cours...</>
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Envoi en cours...
+                                            </>
                                         ) : (
-                                            <><CheckCircle2 className="w-4 h-4" /> Envoyer ma demande</>
+                                            <>
+                                                <CheckCircle2 className="w-4 h-4" />
+                                                Envoyer ma demande
+                                            </>
                                         )}
                                     </button>
                                 </div>
@@ -518,22 +889,42 @@ export default function StudentVerificationPage() {
                     <div className="mt-8 grid md:grid-cols-2 gap-4">
                         <div className="glass rounded-xl p-5 border border-white/10">
                             <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />Documents acceptés
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                Documents acceptés
                             </h3>
                             <ul className="space-y-2 text-sm text-white/70">
-                                <li className="flex items-start gap-2"><span className="text-emerald-400">✓</span><span>Certificat de scolarité</span></li>
-                                <li className="flex items-start gap-2"><span className="text-emerald-400">✓</span><span>Attestation d'inscription</span></li>
-                                <li className="flex items-start gap-2"><span className="text-emerald-400">✓</span><span>Carte étudiante (avec date de validité)</span></li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-emerald-400">✓</span>
+                                    <span>Certificat de scolarité</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-emerald-400">✓</span>
+                                    <span>Attestation d'inscription</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-emerald-400">✓</span>
+                                    <span>Carte étudiante (avec date de validité)</span>
+                                </li>
                             </ul>
                         </div>
                         <div className="glass rounded-xl p-5 border border-white/10">
                             <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                                <X className="w-4 h-4 text-red-400" />Documents non acceptés
+                                <X className="w-4 h-4 text-red-400" />
+                                Documents non acceptés
                             </h3>
                             <ul className="space-y-2 text-sm text-white/70">
-                                <li className="flex items-start gap-2"><span className="text-red-400">✗</span><span>Passeport / CNI</span></li>
-                                <li className="flex items-start gap-2"><span className="text-red-400">✗</span><span>Permis de conduire</span></li>
-                                <li className="flex items-start gap-2"><span className="text-red-400">✗</span><span>Documents falsifiés</span></li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-red-400">✗</span>
+                                    <span>Passeport / CNI</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-red-400">✗</span>
+                                    <span>Permis de conduire</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="text-red-400">✗</span>
+                                    <span>Documents falsifiés</span>
+                                </li>
                             </ul>
                         </div>
                     </div>

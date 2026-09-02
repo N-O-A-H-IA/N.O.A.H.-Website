@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { RankBadgeProfile } from "@/components/RankBadge";
+import { DiscordConnect } from "@/components/DiscordConnect";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -182,6 +183,9 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Section Discord */}
+        <DiscordConnect />
+
         {/* Informations personnelles */}
         <div className="glass rounded-2xl p-6 mb-6">
           <h3 className="font-display text-xl font-bold mb-5">
@@ -190,7 +194,7 @@ export default function ProfilePage() {
           <div className="space-y-4">
             <div>
               <label className="text-xs text-noah-muted mb-1.5 block">
-                Nom complet
+                Pseudo
               </label>
               <input
                 type="text"

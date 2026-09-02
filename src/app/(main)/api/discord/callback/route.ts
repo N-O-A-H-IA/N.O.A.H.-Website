@@ -1,58 +1,86 @@
-// src/app/api/discord/callback/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { syncUserDiscordRoles } from "@/lib/discord";
 
-export async function GET(req: NextRequest) {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const code = searchParams.get("code");
+  const error = searchParams.get("error");
+
+  if (error || !code) {
+    console.error("❌ Erreur OAuth ou code manquant:", error);
+    return NextResponse.redirect(new URL("/settings?discord_error=auth_failed", request.url));
+  }
+
   try {
-    // Récupérer le code depuis les paramètres URL (Discord l'envoie en GET)
-    const code = req.nextUrl.searchParams.get('code');
-    
-    if (!code) {
-      return NextResponse.json({ error: 'Code manquant' }, { status: 400 });
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    // 1. Échanger le code contre un token d'accès
-    const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    // 1. Échanger le code contre un token
+    const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
       body: new URLSearchParams({
         client_id: process.env.DISCORD_CLIENT_ID!,
         client_secret: process.env.DISCORD_CLIENT_SECRET!,
-        grant_type: 'authorization_code',
-        code: code,
+        grant_type: "authorization_code",
+        code,
         redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/discord/callback`,
-      }).toString(),
+      }),
     });
 
+    // ✅ NOUVEAU : Afficher la vraie erreur de Discord si ça échoue
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json();
-      console.error('Erreur token Discord:', errorData);
-      throw new Error('Échec de l\'authentification Discord');
+      const errorText = await tokenResponse.text();
+      console.error("❌ Échec récupération token Discord:", tokenResponse.status, errorText);
+      throw new Error(`Discord API error: ${tokenResponse.status}`);
     }
-    
-    const tokenData = await tokenResponse.json();
 
-    // 2. Récupérer les infos de l'utilisateur
-    const userResponse = await fetch('https://discord.com/api/users/@me', {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    const tokens = await tokenResponse.json();
+
+    // 2. Récupérer les infos de l'utilisateur Discord
+    const userResponse = await fetch("https://discord.com/api/users/@me", {
+      headers: {
+        Authorization: `Bearer ${tokens.access_token}`,
+      },
     });
 
-    if (!userResponse.ok) {
-      throw new Error('Échec de la récupération utilisateur');
+    const discordUser = await userResponse.json();
+
+    // 3. Sauvegarder le Discord ID dans le profil
+    const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          discord_id: discordUser.id,
+          discord_username: `${discordUser.username}#${discordUser.discriminator === '0' ? discordUser.username : discordUser.discriminator}`, // Format moderne Discord
+        })
+        .eq("id", user.id);
+
+    if (updateError) {
+      console.error("❌ Erreur mise à jour profil:", updateError);
     }
 
-    const user = await userResponse.json();
+    // 4. Récupérer le plan et synchroniser les rôles
+    const { data: profile } = await supabase
+        .from("profiles")
+        .select("plan")
+        .eq("id", user.id)
+        .single();
 
-    // 3. Rediriger vers la page du règlement avec les infos utilisateur
-    const redirectUrl = new URL('/reglement', req.url);
-    redirectUrl.searchParams.set('userId', user.id);
-    redirectUrl.searchParams.set('username', user.username);
-    redirectUrl.searchParams.set('avatar', user.avatar 
-      ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-      : 'https://cdn.discordapp.com/embed/avatars/0.png');
+    if (profile?.plan && discordUser.id) {
+      console.log(`🔄 Sync rôles Discord pour ${user.id} (plan: ${profile.plan})`);
+      await syncUserDiscordRoles(discordUser.id, profile.plan);
+    }
 
-    return NextResponse.redirect(redirectUrl);
-  } catch (error) {
-    console.error('Erreur OAuth Discord:', error);
-    return NextResponse.json({ error: 'Échec de la connexion' }, { status: 500 });
+    return NextResponse.redirect(new URL("/settings?discord_connected=true", request.url));
+  } catch (error: any) {
+    console.error("🚨 Erreur OAuth Discord:", error.message);
+    return NextResponse.redirect(new URL("/settings?discord_error=unknown", request.url));
   }
 }
