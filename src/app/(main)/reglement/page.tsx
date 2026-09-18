@@ -9,7 +9,7 @@ import { useSearchParams } from 'next/navigation';
 // ============================================
 const QUESTION_BANK = [
   {
-    q: "Selon le règlement officiel, que signifie **exactement** l'acronyme **N.O.A.H.** et quelle est sa nature ?",
+    q: "Selon le règlement officiel, que signifie exactement l'acronyme N.O.A.H. et quelle est sa nature ?",
     options: [
       "Neural Operational Assistant Hub : une Intelligence Artificielle en développement communautaire",
       "New Online Artificial Helper : un simple bot de modération automatique",
@@ -20,7 +20,7 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Concernant l'ambiance et les valeurs du serveur, lesquelles sont **explicitement** citées comme fondamentales ? (Plusieurs réponses possibles)",
+    q: "Concernant l'ambiance et les valeurs du serveur, lesquelles sont explicitement citées comme fondamentales ? (Plusieurs réponses possibles)",
     options: [
       "La bienveillance et le respect mutuel",
       "La compétition acharnée pour être le meilleur",
@@ -32,10 +32,10 @@ const QUESTION_BANK = [
     multi: true
   },
   {
-    q: "Quelle est la politique **absolue et sans exception** du serveur concernant le harcèlement, la discrimination et le doxing ?",
+    q: "Quelle est la politique absolue et sans exception du serveur concernant le harcèlement, la discrimination et le doxing ?",
     options: [
       "C'est toléré si c'est présenté comme une 'blague' ou de l'humour",
-      "C'est strictement interdit et entraîne une **exclusion immédiate** (ban)",
+      "C'est strictement interdit et entraîne une exclusion immédiate (ban)",
       "C'est autorisé dans les messages privés (MP) tant que ça ne se voit pas en public",
       "Cela dépend de l'humeur des modérateurs du moment"
     ],
@@ -43,21 +43,21 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Si tu es témoin d'un comportement toxique ou d'une règle enfreinte, quelle est la **seule** procédure correcte à suivre ?",
+    q: "Si tu es témoin d'un comportement toxique ou d'une règle enfreinte, quelle est la seule procédure correcte à suivre ?",
     options: [
       "Insulter la personne en retour pour lui montrer qu'elle a tort",
       "Prévenir tous les membres du serveur en utilisant @everyone pour faire un scandale",
-      "Utiliser la commande /report ou ouvrir un **ticket** dans le salon dédié",
+      "Utiliser la commande /report ou ouvrir un ticket dans le salon dédié",
       "Prendre une capture d'écran et la publier sur Twitter pour shamer la personne"
     ],
     correct: [2],
     multi: false
   },
   {
-    q: "Concernant le contenu **NSFW**, la **violence** (gore) et les activités **illégales** (piratage, malware), quelle est la règle ?",
+    q: "Concernant le contenu NSFW, la violence (gore) et les activités illégales (piratage, malware), quelle est la règle ?",
     options: [
       "C'est autorisé uniquement dans un salon caché réservé aux adultes",
-      "C'est strictement **interdit** partout sur le serveur, sans aucune exception",
+      "C'est strictement interdit partout sur le serveur, sans aucune exception",
       "C'est toléré si tu mets un avertissement 'Spoiler' ou 'NSFW' avant le message",
       "C'est autorisé tant que c'est partagé en message privé (MP)"
     ],
@@ -65,32 +65,32 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Quelle est la différence fondamentale entre **partager une création** et faire de la **publicité** non autorisée ?",
+    q: "Quelle est la différence fondamentale entre partager une création et faire de la publicité non autorisée ?",
     options: [
       "Il n'y a aucune différence, tout est interdit",
       "La longueur du message : les pubs doivent faire moins de 3 lignes",
-      "L'intention : **enrichir la communauté** (partage) vs **attirer les gens vers l'extérieur** pour un gain personnel (pub)",
+      "L'intention : enrichir la communauté (partage) vs attirer les gens vers l'extérieur pour un gain personnel (pub)",
       "Le partage est réservé aux rôles VIP, la pub est pour tout le monde"
     ],
     correct: [2],
     multi: false
   },
   {
-    q: "Dans les salons vocaux, quelles sont les **bonnes pratiques** obligatoires pour respecter les autres ? (Plusieurs réponses possibles)",
+    q: "Dans les salons vocaux, quelles sont les bonnes pratiques obligatoires pour respecter les autres ? (Plusieurs réponses possibles)",
     options: [
-      "Couper son micro (**Mute**) lorsqu'on ne parle pas pour éviter les bruits de fond",
+      "Couper son micro (Mute) lorsqu'on ne parle pas pour éviter les bruits de fond",
       "Crier pour être sûr que tout le monde entende bien ce qu'on dit",
-      "Demander l'accord de **tous** les participants avant d'enregistrer la conversation",
+      "Demander l'accord de tous les participants avant d'enregistrer la conversation",
       "Laisser de la musique jouer en fond en permanence via un bot"
     ],
     correct: [0, 2],
     multi: true
   },
   {
-    q: "Concernant les mentions **@everyone** et **@here**, quelle est la règle stricte ?",
+    q: "Concernant les mentions @everyone et @here, quelle est la règle stricte ?",
     options: [
       "Elles sont totalement libres pour que tout le monde puisse organiser des événements",
-      "Elles sont **strictement réservées au Staff** et nécessitent une autorisation préalable",
+      "Elles sont strictement réservées au Staff et nécessitent une autorisation préalable",
       "Elles sont autorisées une fois par jour et par membre",
       "Elles sont réservées aux membres ayant le rôle 'VIP Ultimate'"
     ],
@@ -98,21 +98,21 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Si un membre t'envoie un **Message Privé (DM) publicitaire** non sollicité pour un autre serveur ou un service, que se passe-t-il ?",
+    q: "Si un membre t'envoie un Message Privé (DM) publicitaire non sollicité pour un autre serveur ou un service, que se passe-t-il ?",
     options: [
       "Il reçoit un simple avertissement oral",
       "Il est mis en sourdine (mute) pendant 24 heures",
-      "Il subit un **bannissement immédiat et définitif** du serveur",
+      "Il subit un bannissement immédiat et définitif du serveur",
       "Rien, les messages privés ne regardent pas la modération"
     ],
     correct: [2],
     multi: false
   },
   {
-    q: "Pour la catégorie **Étudiants**, quelle est la règle absolue concernant les devoirs, les examens et le partage de connaissances ?",
+    q: "Pour la catégorie Étudiants, quelle est la règle absolue concernant les devoirs, les examens et le partage de connaissances ?",
     options: [
       "Le plagiat est accepté tant que tu ne te fais pas prendre",
-      "L'entraide est encouragée, mais le **plagiat** et la **vente de fuites d'examens** sont strictement interdits",
+      "L'entraide est encouragée, mais le plagiat et la vente de fuites d'examens sont strictement interdits",
       "Tu peux demander aux autres de faire tes devoirs à ta place",
       "Les sujets d'examens peuvent être partagés librement après l'épreuve"
     ],
@@ -120,10 +120,10 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Pour la catégorie **Développeurs**, quelles sont les obligations lors du partage de code ou de projets ? (Plusieurs réponses possibles)",
+    q: "Pour la catégorie Développeurs, quelles sont les obligations lors du partage de code ou de projets ? (Plusieurs réponses possibles)",
     options: [
       "Le code doit être propre et, si possible, documenté",
-      "Le partage de **malware**, de virus ou de code malveillant est un motif de ban immédiat",
+      "Le partage de malware, de virus ou de code malveillant est un motif de ban immédiat",
       "Tu dois respecter la propriété intellectuelle et les licences des projets open-source",
       "Tu as le droit de voler du code tant que tu ne le dis à personne"
     ],
@@ -131,7 +131,7 @@ const QUESTION_BANK = [
     multi: true
   },
   {
-    q: "Concernant le système de sanctions, que signifie une **exclusion temporaire** (kick/ban temporaire) ?",
+    q: "Concernant le système de sanctions, que signifie une exclusion temporaire (kick/ban temporaire) ?",
     options: [
       "Le membre est banni pour toujours sans possibilité de retour",
       "Le membre est retiré du serveur pour une durée définie (ex: 24h à 30 jours) avant de pouvoir revenir",
@@ -142,7 +142,7 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Quelles circonstances sont considérées comme **aggravantes** par la modération et peuvent accélérer une sanction ? (Plusieurs réponses possibles)",
+    q: "Quelles circonstances sont considérées comme aggravantes par la modération et peuvent accélérer une sanction ? (Plusieurs réponses possibles)",
     options: [
       "La récidive (répéter la même infraction après un avertissement)",
       "Le fait de reconnaître ses torts et de s'excuser sincèrement",
@@ -153,10 +153,10 @@ const QUESTION_BANK = [
     multi: true
   },
   {
-    q: "Concernant la protection des données (**RGPD**) et l'IA N.O.A.H., quelle affirmation est **vraie** ?",
+    q: "Concernant la protection des données (RGPD) et l'IA N.O.A.H., quelle affirmation est vraie ?",
     options: [
       "N.O.A.H. revend tes données de conversation à des entreprises publicitaires",
-      "N.O.A.H. utilise certaines interactions pour **s'améliorer**, mais **ne revend jamais** tes données personnelles",
+      "N.O.A.H. utilise certaines interactions pour s'améliorer, mais ne revend jamais tes données personnelles",
       "Tu n'as aucun droit sur les données collectées par le serveur",
       "Le serveur conserve tes logs de modération pendant 10 ans"
     ],
@@ -167,7 +167,7 @@ const QUESTION_BANK = [
     q: "Comment exercer tes droits RGPD (accès, rectification, effacement de tes données) sur le serveur N.O.A.H. ?",
     options: [
       "En envoyant un email personnel au fondateur depuis une adresse anonyme",
-      "En ouvrant un **ticket** dans le salon dédié avec l'objet exact **'Demande RGPD'**",
+      "En ouvrant un ticket dans le salon dédié avec l'objet exact 'Demande RGPD'",
       "En le demandant oralement dans un salon vocal",
       "En créant un nouveau compte Discord"
     ],
@@ -186,10 +186,10 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Si un cas de conflit ou de comportement n'est **pas explicitement prévu** dans ce règlement, comment sera-t-il traité ?",
+    q: "Si un cas de conflit ou de comportement n'est pas explicitement prévu dans ce règlement, comment sera-t-il traité ?",
     options: [
       "La personne sera automatiquement bannie par sécurité",
-      "Le staff utilisera son **bon sens** et se basera sur les **valeurs fondamentales** de N.O.A.H. pour trancher",
+      "Le staff utilisera son bon sens et se basera sur les valeurs fondamentales de N.O.A.H. pour trancher",
       "Le cas sera ignoré jusqu'à ce que le règlement soit mis à jour",
       "Un vote de la communauté entière sera organisé"
     ],
@@ -199,7 +199,7 @@ const QUESTION_BANK = [
   {
     q: "Concernant les pseudos et avatars, quelle est la règle pour éviter l'usurpation d'identité ?",
     options: [
-      "Il est interdit d'avoir un pseudo, un avatar ou un statut qui imite un membre du **Staff** ou l'IA **N.O.A.H.**",
+      "Il est interdit d'avoir un pseudo, un avatar ou un statut qui imite un membre du Staff ou l'IA N.O.A.H.",
       "Tu peux te faire passer pour un admin tant que tu ne demandes pas d'argent",
       "Les pseudos doivent obligatoirement contenir ton vrai nom et prénom",
       "L'usurpation est autorisée si c'est fait de manière humoristique"
@@ -208,9 +208,9 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Dans le salon **#sante-mentale**, quelle est la limite à ne pas franchir ?",
+    q: "Dans le salon #sante-mentale, quelle est la limite à ne pas franchir ?",
     options: [
-      "C'est un espace d'écoute bienveillante, mais il est **interdit de donner des conseils médicaux** professionnels",
+      "C'est un espace d'écoute bienveillante, mais il est interdit de donner des conseils médicaux professionnels",
       "Tu dois obligatoirement détailler tous tes problèmes personnels",
       "C'est le seul endroit où les insultes sont tolérées pour évacuer",
       "Seuls les professionnels de santé certifiés ont le droit d'y parler"
@@ -230,10 +230,10 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Comment devient-on officiellement **Modérateur** ou **Beta-Testeur** sur le serveur ?",
+    q: "Comment devient-on officiellement Modérateur ou Beta-Testeur sur le serveur ?",
     options: [
       "En achetant un grade VIP",
-      "Uniquement sur **candidature** ou **invitation** du Staff",
+      "Uniquement sur candidature ou invitation du Staff",
       "Automatiquement après 1 mois d'ancienneté",
       "Aucune de ces réponses"
     ],
@@ -241,10 +241,10 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Que se passe-t-il en cas de **faux signalement** délibéré d'un autre membre ?",
+    q: "Que se passe-t-il en cas de faux signalement délibéré d'un autre membre ?",
     options: [
       "Rien, c'est encouragé pour tester la modération",
-      "C'est considéré comme une **infraction en soi** et peut être sanctionné",
+      "C'est considéré comme une infraction en soi et peut être sanctionné",
       "On reçoit un rôle spécial de 'Détective'",
       "Aucune de ces réponses"
     ],
@@ -255,7 +255,7 @@ const QUESTION_BANK = [
     q: "Dans quel délai faut-il contester une sanction via un ticket d'appel ?",
     options: [
       "Dans les 24 heures",
-      "Dans les **7 jours** suivant la décision",
+      "Dans les 7 jours suivant la décision",
       "Dans les 6 mois",
       "Aucune de ces réponses"
     ],
@@ -263,10 +263,10 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Les bannissements de **Niveau 5** (infractions extrêmement graves comme les menaces terroristes) sont-ils sujets à appel ?",
+    q: "Les bannissements de Niveau 5 (infractions extrêmement graves comme les menaces terroristes) sont-ils sujets à appel ?",
     options: [
       "Oui, toujours",
-      "Non, ils ne sont **pas sujets à appel**",
+      "Non, ils ne sont pas sujets à appel",
       "Oui, mais seulement pour les membres VIP",
       "Aucune de ces réponses"
     ],
@@ -274,10 +274,10 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Quelle est la règle principale dans l'**Espace Créatif** ?",
+    q: "Quelle est la règle principale dans l'Espace Créatif ?",
     options: [
       "Seules les œuvres professionnelles sont acceptées",
-      "Les **critiques constructives** sont bienvenues, pas le dénigrement gratuit",
+      "Les critiques constructives sont bienvenues, pas le dénigrement gratuit",
       "Il est interdit de partager des créations faites avec l'IA N.O.A.H.",
       "Aucune de ces réponses"
     ],
@@ -285,9 +285,9 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Quelle obligation s'applique spécifiquement aux membres de l'**Espace Beta-Testeurs** ?",
+    q: "Quelle obligation s'applique spécifiquement aux membres de l'Espace Beta-Testeurs ?",
     options: [
-      "**Confidentialité obligatoire** sur les fonctionnalités non publiées",
+      "Confidentialité obligatoire sur les fonctionnalités non publiées",
       "Obligation de poster 10 messages par jour",
       "Interdiction totale d'utiliser N.O.A.H.",
       "Aucune de ces réponses"
@@ -296,7 +296,7 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Quelle est la sanction typique pour un premier **spam léger** ?",
+    q: "Quelle est la sanction typique pour un premier spam léger ?",
     options: [
       "Bannissement définitif",
       "Exclusion de 30 jours",
@@ -307,10 +307,10 @@ const QUESTION_BANK = [
     multi: false
   },
   {
-    q: "Que signifie le **Niveau 3** dans le système de sanctions progressif ?",
+    q: "Que signifie le Niveau 3 dans le système de sanctions progressif ?",
     options: [
       "Avertissement oral",
-      "**Mute temporaire** (1h à 24h)",
+      "Mute temporaire (1h à 24h)",
       "Bannissement définitif",
       "Aucune de ces réponses"
     ],
@@ -322,14 +322,14 @@ const QUESTION_BANK = [
     options: [
       "N'importe quel membre ancien",
       "Uniquement l'IA N.O.A.H. de manière automatique",
-      "Les membres du **Staff officiel** (Modérateurs, Administrateurs)",
+      "Les membres du Staff officiel (Modérateurs, Administrateurs)",
       "Aucune de ces réponses"
     ],
     correct: [2],
     multi: false
   },
   {
-    q: "Concernant l'interaction avec l'IA, que signifie le terme **'jailbreak'** mentionné dans le règlement ?",
+    q: "Concernant l'interaction avec l'IA, que signifie le terme 'jailbreak' mentionné dans le règlement ?",
     options: [
       "Libérer l'IA de ses serveurs physiques",
       "Tenter de contourner ses protections pour lui faire produire du contenu interdit",

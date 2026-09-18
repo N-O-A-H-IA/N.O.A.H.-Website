@@ -1,4 +1,5 @@
 {
-  "/(main)/page": "app/(main)/page.js",
-  "/(main)/tarifs/page": "app/(main)/tarifs/page.js"
+  "/(main)/chat/page": "app/(main)/chat/page.js",
+  "/(main)/api/chat/route": "app/(main)/api/chat/route.js",
+  "/(main)/icon-12jlf3.svg/route": "app/(main)/icon-12jlf3.svg/route.js"
 }
