@@ -38,7 +38,8 @@
 
 ## Présentation
 
-**N.O.A.H.** (*Neural Operational Assistant Hub*) est un assistant d'intelligence artificielle conçu pour le français. Ce dépôt contient le **site web** : l'interface de discussion, la gestion des comptes, la boutique d'abonnements et le panneau d'administration.
+**N.O.A.H.** (*Neural Operational Assistant Hub*) est un assistant d'intelligence artificielle conçu pour le français. 
+Ce dépôt contient le **site web** : l'interface de discussion, la gestion des comptes, la boutique d'abonnements et le panneau d'administration.
 
 Le moteur de l'IA est un **service indépendant** : le site s'occupe de l'utilisateur, de ses réglages et de ses abonnements, puis délègue la génération des réponses à ce service.
 
