@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="N.O.A.H. — Neural Operational Assistant Hub" width="100%">
+  <img src="banner.svg" alt="N.O.A.H. — Neural Operational Assistant Hub" width="100%">
 </p>
 
 <p align="center">
